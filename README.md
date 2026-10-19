@@ -10,3 +10,12 @@ Postgres 14 + pgvector on 5433, Redis on 6380, Immich on 2284, ML on 3004 (not y
 
 vendor/, tools/ (portable Postgres, Redis) and run/ (logs, secrets) are git-ignored.
 Known: Redis 5.0.14 (Windows port) only triggers Immich's "recommended 6.2" warning.
+
+## Data layout (everything to back up is on D:)
+- D:\ImmichNative\pgdata   live Postgres cluster (don't copy while running; use the dumps)
+- D:\ImmichNative\media    photos/videos (back this up)
+- D:\ImmichNative\redis    Redis snapshots (dump.rdb; queues only, safe to lose)
+- D:\ImmichNative\backups  pg_dump archives from scripts/backup-db.ps1 (keeps 14, verified on write)
+- D:\ImmichNative\build    geodata, plugins, web build (rebuildable)
+C: holds only programs and source (tools/, vendor/) and the secrets file run/pg.env, which is deliberately not backed up with the data.
+Restore: create a database, then pg_restore --no-owner -d <db> <file>.dump.
