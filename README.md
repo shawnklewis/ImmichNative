@@ -48,3 +48,15 @@ The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNIN
 - Server builds: relocate-runtime.ps1 stages a copy-mode pnpm deploy into C:\ProgramData\ImmichNative\server-<stamp>; redeploy.ps1 (via swap-server.ps1)
   repoints the 'server' junction at it while the service is stopped. Never rename a deploy folder: pnpm writes absolute junction targets.
   Copy mode keeps the files independent of the user's pnpm store (hard links would share permissions with profile files).
+
+## Cutover record (2026-10-19) and rollback
+Docker Immich was stopped and its data copied here: database immich_live, library D:\ImmichNative\library, served on 0.0.0.0:2283
+(photos.kurtnelle.com reaches it through the Windows cloudflared service, which targets localhost:2283). ML is off.
+- Docker data is untouched: D:\Immich\library, its Postgres data, and a final dump in D:\ImmichNative\migration\docker-immich-cutover-*.dump.
+- Rollback (clean only while the native instance has no uploads Docker lacks): stop the ImmichNative service (admin),
+  then in D:\Immich run:  docker update --restart=always immich_server immich_postgres immich_redis immich_machine_learning
+  followed by:  docker start immich_postgres immich_redis immich_server immich_machine_learning
+- Leftovers to clean when satisfied: database immich (prototype test data) and immich_mig (rehearsal copy), D:\ImmichNative\media (prototype uploads),
+  C:\ProgramData\ImmichNative\server-* old builds are pruned automatically by swap-server.ps1.
+- Firewall rule 'Immich (native) LAN 2283': inbound TCP 2283, remote LocalSubnet only, node.exe only, all profiles
+  (Windows classifies this PC's Ethernet as Public).

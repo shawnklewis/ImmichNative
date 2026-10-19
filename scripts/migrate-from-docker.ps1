@@ -61,9 +61,9 @@ update person     set "thumbnailPath" = '$mr\' || replace(substr("thumbnailPath"
 -- don't begin with the saved one. Paths were rewritten above, so update the saved value to match.
 update system_metadata set value = jsonb_build_object('location', '$mr') where key = 'MediaLocation';
 commit;
-select 'asset', count(*) filter (where "originalPath" like '$mr\%') as rewritten, count(*) filter (where "originalPath" like '/data/%') as untouched from asset;
-select 'asset_file', count(*) filter (where path like '$mr\%'), count(*) filter (where path like '/data/%') from asset_file;
-select 'person', count(*) filter (where "thumbnailPath" like '$mr\%'), count(*) filter (where "thumbnailPath" like '/data/%') from person;
+select 'asset', count(*) filter (where starts_with("originalPath", '$mr\')) as rewritten, count(*) filter (where "originalPath" like '/data/%') as untouched from asset;
+select 'asset_file', count(*) filter (where starts_with(path, '$mr\')), count(*) filter (where path like '/data/%') from asset_file;
+select 'person', count(*) filter (where starts_with("thumbnailPath", '$mr\')), count(*) filter (where "thumbnailPath" like '/data/%') from person;
 "@
 }
 
@@ -93,4 +93,5 @@ if (-not $SkipCopy) {
     }
 }
 "=== done ($(Get-Date -Format HH:mm:ss))"
+
 
