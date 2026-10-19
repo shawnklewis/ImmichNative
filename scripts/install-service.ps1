@@ -1,9 +1,10 @@
-# Installs the ImmichNative supervisor as a Windows service. Triggers a UAC prompt.
+# Installs (or replaces) the ImmichNative supervisor as a Windows service. Triggers a UAC prompt.
+# Run scripts\relocate-runtime.ps1 first: the service runs entirely from C:\ProgramData\ImmichNative and never
+# touches the user's profile folder.
 # The service runs as NT AUTHORITY\NetworkService, not LocalSystem: PostgreSQL refuses to start
 # under an administrative account.
 param([switch]$Start)
 
-$root = Split-Path $PSScriptRoot
 $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $argList = @('-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$PSCommandPath`"")
@@ -13,33 +14,27 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 
 $ErrorActionPreference = 'Stop'
-$name = 'ImmichNative'
-$publish = Join-Path $root 'publish'
+$name    = 'ImmichNative'
+$home_   = 'C:\ProgramData\ImmichNative'
+$exe     = "$home_\supervisor\ImmichSupervisor.exe"
 $account = 'NT AUTHORITY\NetworkService'
 
-Write-Host 'Publishing...'
-dotnet publish "$root\src\ImmichSupervisor" -c Release -o $publish --nologo | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+if (-not (Test-Path $exe)) { throw "Missing $exe. Run scripts\relocate-runtime.ps1 first." }
 
-Write-Host 'Granting file permissions to NetworkService...'
-# Read+execute on programs and config, modify on data/log/backup folders, read on the secrets file.
-foreach ($p in "$root\tools", "$root\vendor", "$root\config", $publish) {
-    icacls $p /grant "${account}:(OI)(CI)RX" /T /C /Q | Out-Null
-}
-icacls "$root\run\pg.env" /grant "${account}:R" /C /Q | Out-Null
-icacls "$root\run" /grant "${account}:(RX)" /C /Q | Out-Null
+# Data, logs, backups and the Redis snapshot live on D: and need write access.
 New-Item -ItemType Directory -Force 'D:\ImmichNative' | Out-Null
 icacls 'D:\ImmichNative' /grant "${account}:(OI)(CI)M" /T /C /Q | Out-Null
 
 if (Get-Service $name -ErrorAction SilentlyContinue) {
-    Write-Host 'Service exists; stopping and removing the old one...'
+    Write-Host 'Service exists; stopping (graceful) and removing the old one...'
     Stop-Service $name -ErrorAction SilentlyContinue
+    (Get-Service $name).WaitForStatus('Stopped', [TimeSpan]::FromMinutes(3))
     sc.exe delete $name | Out-Null
     Start-Sleep 2
 }
 
 Write-Host 'Creating service...'
-sc.exe create $name binPath= "`"$publish\ImmichSupervisor.exe`"" obj= $account start= delayed-auto DisplayName= 'Immich (native)' | Out-Null
+sc.exe create $name binPath= "`"$exe`"" obj= $account start= delayed-auto DisplayName= 'Immich (native)' | Out-Null
 sc.exe description $name 'Supervises Postgres, Redis and the Immich server' | Out-Null
 sc.exe failure $name reset= 86400 actions= restart/5000/restart/30000/restart/60000 | Out-Null
 # Give the supervisor time to stop Postgres/Redis gracefully at shutdown.
