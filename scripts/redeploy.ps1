@@ -54,6 +54,18 @@ if (Test-Path "$dest\supervisor-old") { Remove-Item "$dest\supervisor-old" -Recu
 if (Test-Path "$dest\supervisor") { Rename-Item "$dest\supervisor" 'supervisor-old' }
 Rename-Item $staging 'supervisor'
 
+$ruleName = 'Immich (native) LAN 2283'
+if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)) {
+    # LAN only: remote address must be on the local subnet, and only the Node binary that runs Immich is allowed.
+    # The Public profile is included because Windows classifies this PC's Ethernet connection as Public; the
+    # LocalSubnet restriction is what keeps it from being reachable beyond the home network.
+    New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort 2283 `
+        -Profile Private, Domain, Public -RemoteAddress LocalSubnet -Program 'C:\Program Files\nodejs\node.exe' | Out-Null
+    Write-Host "Added firewall rule '$ruleName'"
+} else {
+    Write-Host "Firewall rule '$ruleName' already present"
+}
+
 Write-Host "Starting service..."
 Start-Service $name
 Write-Host "Service status: $((Get-Service $name).Status)"
