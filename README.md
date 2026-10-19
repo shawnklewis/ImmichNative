@@ -39,3 +39,9 @@ Config: src/ImmichSupervisor/appsettings.json (Components, Backup). Secrets come
 - scripts/uninstall-service.ps1                 remove the service (data untouched)
 The service runs as NT AUTHORITY\NetworkService because PostgreSQL refuses to run under an administrative account.
 The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNING_ENABLED=false).
+
+## Operations
+- Redeploy after changing supervisor code or appsettings.json: scripts/redeploy.ps1 (one UAC prompt; logs to C:\ProgramData\ImmichNative\redeploy.log).
+  Editing the deployed appsettings.json alone does nothing until the service restarts; a supervisor restart that finds components still
+  healthy ADOPTS them with their old environment, so config changes to a component need that component stopped first (redeploy.ps1 does this).
+- Logs: D:\ImmichNative\logs (supervisor.log, immich-server.log, redis.log, pg\postgresql.log). Postgres has no console under a service, hence logging_collector.

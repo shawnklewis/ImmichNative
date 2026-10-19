@@ -17,6 +17,12 @@ var options = builder.Configuration.GetSection("Supervisor").Get<SupervisorOptio
     ?? throw new InvalidOperationException("Missing 'Supervisor' section in appsettings.json");
 var resolved = ConfigLoader.Resolve(options);
 builder.Services.AddSingleton(resolved);
+try
+{
+    builder.Logging.AddProvider(new FileLoggerProvider(Path.Combine(resolved.LogDirectory, "supervisor.log")));
+}
+catch (IOException) { /* log folder unavailable; console/event log still work */ }
+catch (UnauthorizedAccessException) { }
 
 if (args.Contains("--check-config"))
 {
