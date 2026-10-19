@@ -52,11 +52,11 @@ The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNIN
 ## Cutover record (2026-10-19) and rollback
 Docker Immich was stopped and its data copied here: database immich_live, library D:\ImmichNative\library, served on 0.0.0.0:2283
 (photos.kurtnelle.com reaches it through the Windows cloudflared service, which targets localhost:2283). ML is off.
-- Docker data is untouched: D:\Immich\library, its Postgres data, and a final dump in D:\ImmichNative\migration\docker-immich-cutover-*.dump.
-- Rollback (clean only while the native instance has no uploads Docker lacks): stop the ImmichNative service (admin),
-  then in D:\Immich run:  docker update --restart=always immich_server immich_postgres immich_redis immich_machine_learning
-  followed by:  docker start immich_postgres immich_redis immich_server immich_machine_learning
-- Leftovers to clean when satisfied: database immich (prototype test data) and immich_mig (rehearsal copy), D:\ImmichNative\media (prototype uploads),
-  C:\ProgramData\ImmichNative\server-* old builds are pruned automatically by swap-server.ps1.
+- Docker Desktop, its WSL distro and its volumes were removed on 2026-10-19, so there is no one-step rollback any more.
+  What remains of the Docker era: D:\Immich\library (original library copy), D:\Immich\docker-compose.yml and .env, and
+  D:\ImmichNative\migration\docker-immich-cutover-*.dump (Docker's final database dump).
+- Cleaned up after the cutover: prototype database 'immich', rehearsal database 'immich_mig', D:\ImmichNative\media, scratch files.
+- The only database now is immich_live. Back up D:\ImmichNative\library and D:\ImmichNative\backups (nightly verified dumps) elsewhere:
+  at the moment everything lives on the one D: drive.
 - Firewall rule 'Immich (native) LAN 2283': inbound TCP 2283, remote LocalSubnet only, node.exe only, all profiles
   (Windows classifies this PC's Ethernet as Public).
