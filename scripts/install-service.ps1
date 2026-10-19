@@ -1,4 +1,4 @@
-# Installs (or replaces) the ImmichNative supervisor as a Windows service. Triggers a UAC prompt.
+﻿# Installs (or replaces) the ImmichNative supervisor as a Windows service. Triggers a UAC prompt.
 # Run scripts\relocate-runtime.ps1 first: the service runs entirely from C:\ProgramData\ImmichNative and never
 # touches the user's profile folder.
 # The service runs as NT AUTHORITY\NetworkService, not LocalSystem: PostgreSQL refuses to start
@@ -20,6 +20,7 @@ $exe     = "$home_\supervisor\ImmichSupervisor.exe"
 $account = 'NT AUTHORITY\NetworkService'
 
 if (-not (Test-Path $exe)) { throw "Missing $exe. Run scripts\relocate-runtime.ps1 first." }
+& "$PSScriptRoot\swap-server.ps1"
 
 # Data, logs, backups and the Redis snapshot live on D: and need write access.
 New-Item -ItemType Directory -Force 'D:\ImmichNative' | Out-Null
@@ -42,3 +43,4 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v WaitToKillServiceTimeout /t R
 
 if ($Start) { Start-Service $name; Write-Host 'Started.' }
 Write-Host "Installed '$name'. Start it with: Start-Service $name   (logs: D:\ImmichNative\logs)"
+

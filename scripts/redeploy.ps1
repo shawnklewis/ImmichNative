@@ -1,4 +1,4 @@
-# Rebuilds the supervisor and swaps it into the running service. One UAC prompt.
+﻿# Rebuilds the supervisor and swaps it into the running service. One UAC prompt.
 # 1. (no admin) publish to C:\ProgramData\ImmichNative\supervisor-new
 # 2. (admin)    stop the service, clean up anything it left running, swap folders, start the service
 # Log of the elevated part: C:\ProgramData\ImmichNative\redeploy.log
@@ -46,6 +46,9 @@ if ($left) {
     Write-Host "No orphaned processes."
 }
 
+Write-Host "Activating staged server build (if any)..."
+& "$PSScriptRoot\swap-server.ps1"
+
 Write-Host "Swapping supervisor files..."
 if (Test-Path "$dest\supervisor-old") { Remove-Item "$dest\supervisor-old" -Recurse -Force }
 if (Test-Path "$dest\supervisor") { Rename-Item "$dest\supervisor" 'supervisor-old' }
@@ -55,3 +58,4 @@ Write-Host "Starting service..."
 Start-Service $name
 Write-Host "Service status: $((Get-Service $name).Status)"
 Stop-Transcript | Out-Null
+

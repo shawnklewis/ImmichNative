@@ -45,3 +45,6 @@ The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNIN
   Editing the deployed appsettings.json alone does nothing until the service restarts; a supervisor restart that finds components still
   healthy ADOPTS them with their old environment, so config changes to a component need that component stopped first (redeploy.ps1 does this).
 - Logs: D:\ImmichNative\logs (supervisor.log, immich-server.log, redis.log, pg\postgresql.log). Postgres has no console under a service, hence logging_collector.
+- Server builds: relocate-runtime.ps1 stages a copy-mode pnpm deploy into C:\ProgramData\ImmichNative\server-<stamp>; redeploy.ps1 (via swap-server.ps1)
+  repoints the 'server' junction at it while the service is stopped. Never rename a deploy folder: pnpm writes absolute junction targets.
+  Copy mode keeps the files independent of the user's pnpm store (hard links would share permissions with profile files).
