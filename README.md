@@ -52,11 +52,16 @@ The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNIN
 ## Cutover record (2026-10-19) and rollback
 Docker Immich was stopped and its data copied here: database immich_live, library D:\ImmichNative\library, served on 0.0.0.0:2283
 (photos.kurtnelle.com reaches it through the Windows cloudflared service, which targets localhost:2283). ML is off.
-- Docker Desktop, its WSL distro and its volumes were removed on 2026-10-19, so there is no one-step rollback any more.
-  What remains of the Docker era: D:\Immich\library (original library copy), D:\Immich\docker-compose.yml and .env, and
-  D:\ImmichNative\migration\docker-immich-cutover-*.dump (Docker's final database dump).
-- Cleaned up after the cutover: prototype database 'immich', rehearsal database 'immich_mig', D:\ImmichNative\media, scratch files.
-- The only database now is immich_live. Back up D:\ImmichNative\library and D:\ImmichNative\backups (nightly verified dumps) elsewhere:
-  at the moment everything lives on the one D: drive.
+- Docker Desktop, its WSL distro and its volumes were removed on 2026-10-19, and D:\Immich (the Docker-era library copy, compose files,
+  .env and scripts) was deleted after the native library was verified byte-identical and the offsite backup was repointed. The only Docker-era
+  artifact kept is D:\ImmichNative\migration\docker-immich-cutover-*.dump. scripts\migrate-from-docker.ps1 is historical and can no longer run.
+- The only database is immich_live. Back up D:\ImmichNative\library and D:\ImmichNative\backups; see the offsite backup below.
 - Firewall rule 'Immich (native) LAN 2283': inbound TCP 2283, remote LocalSubnet only, node.exe only, all profiles
   (Windows classifies this PC's Ethernet as Public).
+
+## Offsite backup (scripts/offsite-backup.ps1)
+Scheduled task 'Immich Offsite Backup' (daily 03:00, runs as the user via S4U) syncs D:\ImmichNative\library (without thumbs/, encoded-video/,
+backups/) to gdrive-crypt:current and D:\ImmichNative\backups to gdrive-crypt:current/db-backups. Deleted files are moved to
+gdrive-crypt:deleted/<date> and pruned after 91 days. It aborts if the source looks missing/empty and refuses to delete more than 1000 files per run.
+Logs: D:\ImmichNative\logs\offsite. Use -DryRun to preview. register-offsite-task.ps1 recreates the task, repoint-offsite-task.ps1 repoints it,
+setup-rclone.ps1 creates the crypt remote (the crypt password and salt must be kept in a password manager: without them the backup cannot be decrypted).
