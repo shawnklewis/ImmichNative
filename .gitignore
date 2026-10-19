@@ -1,0 +1,8 @@
+vendor/
+tools/
+run/
+data/
+*.env
+.env
+bin/
+obj/

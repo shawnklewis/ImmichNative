@@ -1,0 +1,37 @@
+diff --git a/server/src/dtos/env.dto.ts b/server/src/dtos/env.dto.ts
+index 71658a6..60e9145 100644
+--- a/server/src/dtos/env.dto.ts
++++ b/server/src/dtos/env.dto.ts
+@@ -12,7 +12,10 @@ enum DatabaseSslMode {
+ }
+ 
+ const DatabaseSslModeSchema = z.enum(DatabaseSslMode).describe('Database SSL mode').meta({ id: 'DatabaseSslMode' });
+-const absolutePath = z.string().regex(/^\//, 'Must be an absolute path').optional();
++const absolutePath = z
++  .string()
++  .refine((value) => /^\//.test(value) || /^[A-Za-z]:[\\/]/.test(value), 'Must be an absolute path')
++  .optional();
+ /**
+  * Treat certain strings as booleans and coerce them to boolean
+  * Ideal for environment variables that are strings but should be treated as booleans
+diff --git a/server/src/repositories/database.repository.ts b/server/src/repositories/database.repository.ts
+index 37860b2..637fb1e 100644
+--- a/server/src/repositories/database.repository.ts
++++ b/server/src/repositories/database.repository.ts
+@@ -6,6 +6,7 @@ import { FileMigrationProvider, Migrator } from 'kysely/migration';
+ import { InjectKysely } from 'nestjs-kysely';
+ import { readdir } from 'node:fs/promises';
+ import { join } from 'node:path';
++import { pathToFileURL } from 'node:url';
+ import { diff } from 'semver';
+ import z from 'zod';
+ import type { ExtensionVersion, VectorExtension } from 'src/types.js';
+@@ -507,7 +508,7 @@ export class DatabaseRepository {
+       provider: new FileMigrationProvider({
+         fs: { readdir },
+         path: { join },
+-        import: (filePath) => import(filePath),
++        import: (filePath) => import(pathToFileURL(filePath).href),
+         migrationFolder: join(import.meta.dirname, '..', 'schema/migrations'),
+       }),
+     });
