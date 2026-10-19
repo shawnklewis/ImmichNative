@@ -25,3 +25,17 @@ Restore: create a database, then pg_restore --no-owner -d <db> <file>.dump.
   Only 2 of 5,441 library photos are HEIC; parked on 2026-10-19 to revisit around 2026-10-26.
   Plan when revisited: patch Immich thumbnail generation to fall back to ffmpeg (verified: ffmpeg decodes both files to full 4032x3024 JPEG).
   A native HEVC build is not worth it: sharp has no global-libvips option on Windows, so it would mean rebuilding the sharp-libvips package.
+
+## Supervisor (src/ImmichSupervisor, .NET 10 worker service)
+Starts Postgres, Redis and the Immich server in dependency order, waits for each health check, restarts crashed
+components with exponential backoff, adopts components that are already running, stops them in reverse order
+(Postgres fast-shutdown, Redis save, Node killed), and takes a verified pg_dump nightly at 03:00 (keeps 14).
+Config: src/ImmichSupervisor/appsettings.json (Components, Backup). Secrets come from run/pg.env, never from config.
+- dotnet test                                   unit tests (restart backoff, start order, secrets, backup plan)
+- ImmichSupervisor.exe --check-config           validate config and print start order
+- ImmichSupervisor.exe --backup-now             one verified backup
+- ImmichSupervisor.exe --run-for <seconds>      run, then shut down gracefully (testing)
+- scripts/install-service.ps1 [-Start]          publish + install the Windows service (UAC)
+- scripts/uninstall-service.ps1                 remove the service (data untouched)
+The service runs as NT AUTHORITY\NetworkService because PostgreSQL refuses to run under an administrative account.
+The machine-learning service is intentionally not set up (IMMICH_MACHINE_LEARNING_ENABLED=false).
