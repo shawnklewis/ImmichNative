@@ -19,3 +19,9 @@ Known: Redis 5.0.14 (Windows port) only triggers Immich's "recommended 6.2" warn
 - D:\ImmichNative\build    geodata, plugins, web build (rebuildable)
 C: holds only programs and source (tools/, vendor/) and the secrets file run/pg.env, which is deliberately not backed up with the data.
 Restore: create a database, then pg_restore --no-owner -d <db> <file>.dump.
+
+## Known gaps
+- HEIC/HEIF (HEVC) images get no thumbnail: sharp's bundled libvips on Windows has no HEVC decoder (Docker's image builds its own with libde265).
+  Only 2 of 5,441 library photos are HEIC; parked on 2026-10-19 to revisit around 2026-10-26.
+  Plan when revisited: patch Immich thumbnail generation to fall back to ffmpeg (verified: ffmpeg decodes both files to full 4032x3024 JPEG).
+  A native HEVC build is not worth it: sharp has no global-libvips option on Windows, so it would mean rebuilding the sharp-libvips package.
